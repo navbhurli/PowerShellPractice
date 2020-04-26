@@ -1,25 +1,26 @@
 $physicalDrive = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" | Select-Object -Property DeviceID
 
-$notReplicated = "$env:USERPROFILE\Downloads\Not-Replicated"
-
+$notReplicated = "$env:USERPROFILE\Downloads\Not-Replicated\"
+$num = 1
 foreach($drives in $physicalDrive.DeviceID)
 {
     $files = Get-ChildItem -Path "$($drives)\" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|OneDrive|Recycle'}   
-    $files.FullName
-    Copy-Item -Path $files.FullName -Destination $notReplicated -Force
-    <# $existPST = Get-ChildItem -Path $notReplicated 
-    foreach($somFile in $existPST)
+    $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
+    foreach($existFile in $existPST)
     {
-        if ($somFile.Name -eq $files.Name)
+        foreach($newfile in $files)
         {
-           Write-Host $somFile.Name         
-        }
-        else
-        {
-            Copy-Item -Path $files.FullName -Destination $notReplicated -Force
+            if ($existFile.Name -eq $newfile.Name)
+            {
+                Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+$num+$newfile.extension)" -Force
+                $num += 1      
+            }
+            else
+            {
+                Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
+            }
         }
 
-    } #>
+    }
     
 }
-
