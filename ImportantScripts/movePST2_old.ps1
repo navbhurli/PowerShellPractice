@@ -13,12 +13,6 @@ If( !(Test-Path -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" )
 {
     New-Item -Path "${env:userprofile}\PST-log" -Name "${env:username}_pstcopy.log" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
 }
-Function Input-Log($x)
-{
-    $time = (Get-Date).ToString()
-    $data = $time + ": " + $x
-    Add-Content -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" -Value $data -ErrorAction SilentlyContinue
-}
 
 function Create-BackupFolder
 {
@@ -29,7 +23,12 @@ function Create-BackupFolder
     }    
 }
 
-
+Function Input-Log($x)
+{
+    $time = (Get-Date).ToString()
+    $data = $time + ": " + $x
+    Add-Content -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" -Value $data -ErrorAction SilentlyContinue
+}
 
 ## Variable declartion
 $notReplicated = "$env:USERPROFILE\Not-Replicated\PST"

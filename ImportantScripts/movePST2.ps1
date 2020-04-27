@@ -8,11 +8,14 @@ param (
     $machine
 )
 
+## Variable declartion
+$notReplicated = "$env:USERPROFILE\Not-Replicated\PST\"
 
 If( !(Test-Path -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" ))
 {
     New-Item -Path "${env:userprofile}\PST-log" -Name "${env:username}_pstcopy.log" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
 }
+
 Function Input-Log($x)
 {
     $time = (Get-Date).ToString()
@@ -20,19 +23,18 @@ Function Input-Log($x)
     Add-Content -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" -Value $data -ErrorAction SilentlyContinue
 }
 
-function Create-BackupFolder
+function Create-BackupFolder()
 {
-    If (!(Test-Path -Path $copyPath -PathType Container))
+    If (!(Test-Path -Path $notReplicated -PathType Container))
     {
-        New-Item -ItemType Directory -Path $copyPath -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $notReplicated -Force -ErrorAction SilentlyContinue
         Input-Log "Folder created"
     }    
 }
 
 
 
-## Variable declartion
-$notReplicated = "$env:USERPROFILE\Not-Replicated\PST"
+
 
 #Executing according to the input - if machine is selected, it will start searching all the physical drives
 if($machine)
@@ -42,25 +44,26 @@ if($machine)
     #scanning and filtering only physical drives and not any shared location or mapped drives
     $physicalDrive = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" | Select-Object -Property DeviceID
     #variable declaration for use in duplicate entries
-    $num = 10
+    
     foreach($drives in $physicalDrive.DeviceID)
     {
         $files = Get-ChildItem -Path "$($drives)\" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|OneDrive|Recycle'}   
         $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
         foreach($newfile in $files)
         {
+            #$num = 10
             if($existPST)
             {
                 foreach($existFile in $existPST)
                 {
                     if ($existFile.Name -eq $newfile.Name)
                     {
-                        Move-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+$num+$newfile.extension)"
-                        $num += 1      
+                        Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
+                        #$num += 1
                     }
                     else
                     {
-                        Move-Item -Path $newfile.FullName -Destination $notReplicated -Force
+                        Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
                     }
                 }
             }
@@ -79,7 +82,7 @@ if ($user)
     Create-BackupFolder
     $PST = Get-ChildItem -Path "$env:USERPROFILE" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|Recycle|OneDrive'}
     $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
-    $num = 10
+    #$num = 10
     foreach($newfile in $PST)
     {
         if($existPST)
@@ -88,12 +91,12 @@ if ($user)
             {
                 if ($existFile.Name -eq $newfile.Name)
                 {
-                    Move-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+$num+$newfile.extension)"
-                    $num += 1      
+                    Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
+                    #$num += 1      
                 }
                 else
                 {
-                    Move-Item -Path $newfile.FullName -Destination $notReplicated -Force
+                    Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
                 }
             }
         }
