@@ -33,6 +33,33 @@ function Create-BackupFolder()
 }
 
 
+Function Move-Files($files)
+{
+    $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
+        foreach($newfile in $files)
+        {
+            if($existPST)
+            {
+                foreach($existFile in $existPST)
+                {
+                    if ($existFile.Name -eq $newfile.Name)
+                    {
+                        Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
+                        Start-Sleep -Seconds 2
+                    }
+                    else
+                    {
+                        Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
+                    }
+                }
+            }
+            else 
+            {
+                Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force         
+            }
+        }
+}
+
 
 
 
@@ -48,30 +75,7 @@ if($machine)
     foreach($drives in $physicalDrive.DeviceID)
     {
         $files = Get-ChildItem -Path "$($drives)\" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|OneDrive|Recycle'}   
-        $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
-        foreach($newfile in $files)
-        {
-            #$num = 10
-            if($existPST)
-            {
-                foreach($existFile in $existPST)
-                {
-                    if ($existFile.Name -eq $newfile.Name)
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
-                        #$num += 1
-                    }
-                    else
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
-                    }
-                }
-            }
-            else 
-            {
-                Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force         
-            }
-        }
+        Move-Files($files)
     }
 }
 
@@ -80,10 +84,21 @@ if($machine)
 if ($user)
 {
     Create-BackupFolder
-    $PST = Get-ChildItem -Path "$env:USERPROFILE" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|Recycle|OneDrive'}
-    $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
-    #$num = 10
-    foreach($newfile in $PST)
+    $files = Get-ChildItem -Path "$env:USERPROFILE" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|Recycle|OneDrive'}
+    Move-Files($files)
+}
+
+
+
+
+
+
+
+
+###########################################################################################################################################################################################
+    ##### NOTHING TO SEE HERE#####
+    <# $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
+    foreach($newfile in $files)
     {
         if($existPST)
         {
@@ -92,7 +107,8 @@ if ($user)
                 if ($existFile.Name -eq $newfile.Name)
                 {
                     Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
-                    #$num += 1      
+                    #$num += 1
+                    Start-Sleep -Seconds 2   
                 }
                 else
                 {
@@ -104,5 +120,4 @@ if ($user)
         {
             Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force         
         }
-    }
-}
+    } #>
