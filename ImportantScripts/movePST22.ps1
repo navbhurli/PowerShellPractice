@@ -1,4 +1,4 @@
-<#
+﻿<#
 ##==============================================
 ## Created by: Naveen Bhurli
 ## Created Date: 29-April-2020
@@ -48,7 +48,7 @@ Function Add-Log($x)
 ## Creating a folder and a log file to record details of the execution
 If( !(Test-Path -Path "${env:userprofile}\PST-log\${env:username}_pstcopy.log" ))
 {
-    Add-Log "Creating log folder and file"
+    #Add-Log "Creating log folder and file"
     New-Item -Path "${env:userprofile}\PST-log" -Name "${env:username}_pstcopy.log" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
     if($?)
     {
@@ -98,81 +98,38 @@ Parameter "files" will be the array of locations of .pst files
 #>
 Function Move-Files($files)
 {
-    $existPST = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
-        foreach($newfile in $files)
+    foreach($newfile in $files)
+    {
+        if(Test-Path -Path "$($notReplicated+$newfile.name)")
         {
-            if($existPST)
+            Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
+            if($?)
             {
-                foreach($existFile in $existPST)
-                {
-                    if ($existFile.Name -eq $newfile.Name)
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
-                        if($?)
-                        {
-                            Add-Log "Successfully moved $($newfile.fullname) to $notReplicated after renaming"
-                        }
-                        else
-                        {
-                            Add-Log "Failed to move $newfile from $($newfile.fullname) "
-                        }
-                        #Start-Sleep -Seconds 3
-                    }
-                    else
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
-                        if($?)
-                        {
-                            Add-Log "Successfully moved $($newfile.fullname) to $notReplicated "
-                        }
-                        else
-                        {
-                            Add-Log "Failed to move $newfile from $($newfile.fullname) "
-                        }
-                        #Start-Sleep -Seconds 3
-                    }
-                    Start-Sleep -Seconds 3
-                }
+                Add-Log "Successfully moved $($newfile.fullname) to $notReplicated after renaming"
             }
-            else 
+            else
             {
-                $existPSTagain = Get-ChildItem -Path $notReplicated -Recurse -Filter *.pst -Force
-                foreach($existagain in $existPSTagain)
-                {
-                    if($newfile.Name -eq $existagain.Name)
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination "$($notReplicated+$newfile.BaseName+'_'+(((Get-Date).Minute).ToString()+((Get-Date).Second).ToString())+$newfile.extension)"
-                        if($?)
-                        {
-                            Add-Log "Successfully moved $($newfile.fullname) to $notReplicated after renaming"
-                        }
-                        else
-                        {
-                            Add-Log "Failed to move $newfile from $($newfile.fullname) "
-                        }
-                    }
-                    else
-                    {
-                        Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force        
-                        if($?)
-                        {
-                            Add-Log "Successfully moved $($newfile.fullname) to $notReplicated "
-                        }
-                        else
-                        {
-                            Add-Log "Failed to move $newfile from $($newfile.fullname) "
-                        }
-                    }
-                    Start-Sleep -Seconds 3
-                }
-
-                
-            }
+                Add-Log "Failed to move $newfile from $($newfile.fullname) "
+            }   
+            Start-Sleep -Seconds 3            
         }
+        else
+        {
+            Copy-Item -Path $newfile.FullName -Destination $notReplicated -Force
+            if($?)
+            {
+                Add-Log "Successfully moved $($newfile.fullname) to $notReplicated "
+            }
+            else
+            {
+                Add-Log "Failed to move $newfile from $($newfile.fullname) "
+            }
+            Start-Sleep -Seconds 3
+        }
+    }
 }
 
-
-
+##Main execution starts here....
 
 #Executing according to the input - if machine is selected, it will start searching all the physical drives
 if($machine)
@@ -181,7 +138,7 @@ if($machine)
     Add-Log "Starting to filter physical drives and scan PST files from entire drives"
     Set-BackupFolder
     #scanning and filtering only physical drives and not any shared location or mapped drives
-    Add-Log "Scanning for Pysical Drives" 
+    Add-Log "Scanning for Physical Drives" 
     $physicalDrive = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" | Select-Object -Property DeviceID
     
     foreach($drives in $physicalDrive.DeviceID)
@@ -190,7 +147,7 @@ if($machine)
         $files = Get-ChildItem -Path "$($drives)\" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|OneDrive|Recycle'}   
         Move-Files($files)
     }
-    Add-Log "Script execution ended"
+    Add-Log "Script execution ended`n"
 }
 
 
@@ -202,5 +159,5 @@ if ($user)
     #fetching .pst files recursively from %userprofile% excluding few locations such as Recycle bin, OneDrive, Destination location and few others
     $files = Get-ChildItem -Path "$env:USERPROFILE" -Recurse -Filter *.pst -Force -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch 'Not-Replicated|Recycle|OneDrive'}
     Move-Files($files)
-    Add-Log "Script execution ended"
+    Add-Log "Script execution ended`n"
 }
