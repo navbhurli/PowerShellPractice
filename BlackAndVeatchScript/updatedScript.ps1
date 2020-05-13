@@ -10,6 +10,7 @@ $password = Get-Content $PSScriptRoot\password.txt | ConvertTo-SecureString -Key
 $credential = New-Object System.Management.Automation.PSCredential($srvuser,$password)
 #>
 
+#test to check if syncing to correct repo in github
 
 ## csv files containing users that needs to be removed
 $userList = Import-Csv -Path "C:\BV\Userlist.csv"
