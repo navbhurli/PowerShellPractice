@@ -1,7 +1,15 @@
-## Declaring variable and defining them
+## Declaring variable for credentials
 $srvuser = "NA\bhu103950-a"
 $password = ConvertTo-SecureString -String "!H@8P@ssw0rd" -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PsCredential($srvUser,$password)
+
+<#  
+## Domain admin creds
+$srvuser = "svc_local"
+$password = Get-Content $PSScriptRoot\password.txt | ConvertTo-SecureString -Key (Get-Content $PSScriptRoot\aes.key)
+$credential = New-Object System.Management.Automation.PSCredential($srvuser,$password)
+#>
+
 
 ## csv files containing users that needs to be removed
 $userList = Import-Csv -Path "C:\BV\Userlist.csv"
