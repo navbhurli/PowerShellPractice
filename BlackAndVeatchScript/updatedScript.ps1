@@ -1,3 +1,28 @@
+<#
+##==================================================
+## Created by: Naveen Bhurli
+## Created Date: 12-May-2020
+## Organisation: Stefanini
+##==================================================
+#>
+##==================================================
+## Log Creation & Appending
+##==================================================
+
+If( !(Test-Path -Path "${env:windir}\logs\RemoveLocalAdminUsers.log"))
+{
+    New-Item -Path "${env:windir}\logs" -Name "RemoveLocalAdminUsers.log" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
+}
+
+Function Input-Log($x)
+{
+    $time = (Get-Date).ToString()
+    $data = $time + ": " + $x
+    Add-Content -Path "${env:windir}\logs\RemoveLocalAdminUsers.log" -Value $data -ErrorAction SilentlyContinue
+}
+
+
+
 ## Declaring variable for credentials
 $srvuser = "NA\bhu103950-a"
 $password = ConvertTo-SecureString -String "!H@8P@ssw0rd" -AsPlainText -Force
@@ -13,16 +38,19 @@ $credential = New-Object System.Management.Automation.PSCredential($srvuser,$pas
 #test to check if syncing to correct repo in github
 
 ## csv files containing users that needs to be removed
-$userList = Import-Csv -Path "C:\BV\Userlist.csv"
+$userList = Import-Csv -Path "$PSScriptRoot\Userlist.csv"
 ## csv files containing servers from which the user needs to be removed
-$serverList = Import-Csv -Path "C:\BV\Serverlist.csv"
+$serverList = Import-Csv -Path "$PSScriptRoot\Serverlist.csv"
 
 foreach($remoteserver in $serverList)
 {
+    $rmsrvName = $remoteserver.Name
+    Input-Log "Scanning $rmsrvName"
     #remote session to the server/machine
     $remoteSession = New-PSSession -Credential $credential -ComputerName $remoteServer.Name
     foreach($user in $userList)
     {
+        Input-Log "Checking if '$($user.lastname), $($user.firstname)' exists and removing it"
         # fetching UserSamAccountName from provided user's first and last name from AD
         $userSam = (Get-ADUser -Filter "name -like '$($user.Lastname)*, $($user.firstname)*'").samaccountname
         # Remoting to that server and executing the script (further important actions)
